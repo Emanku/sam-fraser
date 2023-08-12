@@ -1,0 +1,557 @@
+/*
+  Author: Sam Fraser https://sam-fraser.ca
+  Big thanks to Bramus for the inspiration for
+  this page's design https://web.dev/css-trig-functions/
+
+  My website is aimed at supporting most modern
+  browsers because my target audience is not those
+  who would accept the security vulnerabilities of
+  an outdated browser
+
+  Also, I deliberately chose to keep the html minimal
+  for this hub page, even avoiding classes entirely,
+  though I would not recommend this approach in almost
+  any other use case
+*/
+
+/*
+  Register properties for animation
+*/
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: true;
+}
+
+@property --spin {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@property --nudge-x {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: false;
+}
+
+@property --nudge-y {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: false;
+}
+
+/*
+  Set up colour scheme
+*/
+:root {
+  --hue-primary: 140;
+  --hue-secondary: 280;
+
+  --title-font-family: "Black Ops One", cursive;
+  --subtitle-font-family: "Squada One", cursive;
+  --text-font-family: "Edu SA Beginner", cursive;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-neutral-surface: hsl(0, 0%, 95%);
+    --color-neutral-text: hsl(0, 0%, 5%);
+    --color-neutral-subtitle: hsl(0, 0%, 30%);
+    --color-primary-surface: hsl(var(--hue-primary, 0), 30%, 95%);
+    --color-primary-text: hsl(var(--hue-primary, 0), 80%, 20%);
+    --color-secondary-surface: hsl(var(--hue-secondary, 200), 30%, 95%);
+    --color-secondary-text: hsl(var(--hue-secondary, 200), 80%, 40%);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-neutral-surface: hsl(0, 0%, 5%);
+    --color-neutral-text: hsl(0, 0%, 95%);
+    --color-neutral-subtitle: hsl(0, 0%, 70%);
+    --color-primary-surface: hsl(var(--hue-primary, 0), 60%, 10%);
+    --color-primary-text: hsl(var(--hue-primary, 0), 60%, 70%);
+    --color-secondary-surface: hsl(var(--hue-secondary, 200), 60%, 10%);
+    --color-secondary-text: hsl(var(--hue-secondary, 200), 60%, 70%);
+  }
+}
+
+/*
+  Border box sizing on everything
+*/
+html {
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+/* 
+  Basic layout for full viewport with no scrolling
+*/
+body,
+main {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  cursor: default;
+  color: var(--color-neutral-text, hsl(0, 0%, 5%));
+  background-color: var(--color-neutral-surface, hsl(0, 0%, 95%));
+}
+
+main {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  text-wrap: balance;
+  font-family: var(--text-font-family, arial);
+}
+
+p {
+  font-family: var(--text-font-family, inherit);
+  font-weight: bold;
+}
+
+/*
+  The main units for determining spacing of this layout
+*/
+main {
+  --min-layout-unit: 6rem;
+  --max-layout-unit: 20rem;
+  --viewport-multiplier: 24;
+  --intended-layout-unit: calc(min(1vw, 1vh) * var(--viewport-multiplier));
+  --layout-unit: clamp(
+    var(--min-layout-unit),
+    var(--intended-layout-unit),
+    var(--max-layout-unit)
+  );
+
+  font-size: clamp(0.6rem, calc(var(--layout-unit) / 10), 2rem);
+
+  /* Size of the circle for positioning portals */
+  --diameter: calc(min(100vh, 100vw) - var(--layout-unit) - 1em);
+  --radius: calc(var(--diameter, 40rem) / 2);
+}
+
+/*
+  Title area
+*/
+article {
+  max-width: calc(var(--diameter) - var(--layout-unit) - 1em);
+  animation: fadein 600ms ease-in;
+  font-size: 1.5em;
+}
+
+header {
+  font-family: var(--subtitle-font-family, sans-serif);
+  font-size: 1.2em;
+}
+
+header div {
+  color: var(--color-neutral-subtitle);
+}
+
+h1 {
+  color: var(--color-primary-text, inherit);
+  font-family: var(--title-font-family, sans-serif);
+  font-weight: normal;
+  margin-block: 0.5em;
+}
+
+article p {
+  color: var(--color-secondary-text);
+}
+
+@keyframes fadein {
+  from {
+    opacity: 0.1;
+    scale: 60%;
+  }
+}
+
+/*
+  Parent element for the portals
+*/
+nav {
+  /* Portal starting location - current: bottom */
+  --base-angle: -90deg;
+
+  /* Portal spacing */
+  --base-offset: 45deg;
+
+  /* Portal entry animations timing */
+  --animation-delay: 400ms;
+  --enter-duration: 300ms;
+  --reposition-duration: calc(var(--animation-delay, 400ms) * 2.4);
+
+  position: absolute;
+  width: var(--diameter, 40rem);
+  height: var(--diameter, 40rem);
+  pointer-events: none;
+}
+
+/*
+  The portals
+*/
+nav a {
+  /* Basic portal layout and appearance */
+  pointer-events: auto;
+  width: var(--layout-unit);
+  height: var(--layout-unit);
+  left: 50%;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-style: solid;
+  border-width: 2px;
+  border-radius: 50%;
+  position: absolute;
+  color: var(--color-primary-text, inherit);
+  background-color: var(--color-primary-surface, inherit);
+  border-color: var(--color-primary-text, inherit);
+  text-decoration: none;
+
+  /* Destination point on circle for the portal */
+  --offset-angle: calc(
+    (var(--base-offset) * var(--offset-group) + var(--extra-offset)) *
+      var(--direction)
+  );
+
+  /* Current position of the portal on the circle */
+  --angle: calc(var(--base-angle, -90deg) + var(--offset-angle, 0deg));
+
+  /* Delay portal's appearance based on number of previous portals */
+  --individual-delay: calc(var(--animation-delay) * var(--nth));
+
+  translate: calc(
+      cos(var(--angle, var(--base-angle, -90deg))) * var(--radius) - 50% +
+        var(--nudge-x, 0px)
+    )
+    calc(
+      sin(var(--angle, var(--base-angle, -90deg)) * -1) * var(--radius) - 50% +
+        var(--nudge-y, 0px)
+    );
+
+  /*
+    Portal Animations
+    [appear], [reposition], [spin], [nudge-x], [nudge-y]
+
+    appear: Have the portal become visible (scale and/or opacity)
+    reposition: Move the portal along the circle to its destination
+    spin: Have the portal rotate slightly back and forth infinitely
+    nudge-x: Have the portal shift slightly left and right infinitely
+    nudge-y: Have the portal shift slightly up and down infinitely
+  */
+  animation-name: appear, reposition, spin, nudge-x, nudge-y;
+  animation-duration: var(--enter-duration),
+    calc(var(--reposition-duration) / 2 * var(--offset-group)),
+    var(--spin-speed, 1s), var(--nudge-x-speed, 1500ms),
+    var(--nudge-y-speed, 1500ms);
+  animation-timing-function: linear, ease-out, linear, ease, ease;
+  animation-fill-mode: backwards, backwards, none, none, none;
+  animation-delay: var(--individual-delay),
+    calc(var(--individual-delay) + calc(var(--enter-duration) * 0.8)),
+    var(--rotate-delay, 0s), 0s, 0s;
+  animation-direction: normal, normal, normal, alternate, alternate;
+  animation-iteration-count: 1, 1, infinite, infinite, infinite;
+  animation-play-state: running, running, var(--paused, paused),
+    var(--paused, paused), var(--paused, paused);
+  rotate: var(--spin, 0deg);
+  --paused: running;
+}
+
+/*
+  Portal Animations
+*/
+@keyframes appear {
+  from {
+    scale: 0%;
+  }
+}
+
+@keyframes reposition {
+  from {
+    --angle: var(--base-angle, -90deg);
+  }
+}
+
+@keyframes spin {
+  0% {
+    --spin: var(--base-spin, 0deg);
+  }
+  25% {
+    --spin: calc(var(--base-spin, 0deg) + var(--spin-amount, 4deg));
+  }
+  50% {
+    --spin: var(--base-spin, 0deg);
+  }
+  75% {
+    --spin: calc(var(--base-spin, 0deg) - var(--spin-amount, 4deg));
+  }
+  100% {
+    --spin: var(--base-spin, 0deg);
+  }
+}
+
+@keyframes nudge-x {
+  from {
+    --nudge-x: var(--nudge-x-amount, 1rem);
+  }
+  to {
+    --nudge-x: calc(var(--nudge-x-amount, 1rem) * -1);
+  }
+}
+
+@keyframes nudge-y {
+  from {
+    --nudge-y: var(--nudge-y-amount, 1rem);
+  }
+  to {
+    --nudge-y: calc(var(--nudge-y-amount, 1rem) * -1);
+  }
+}
+
+/*
+  Inside the portals
+*/
+nav a div,
+nav a p {
+  margin-inline: 1rem;
+}
+
+nav a :first-child {
+  font-family: var(--subtitle-font-family, inherit);
+  font-size: 1.2em;
+  margin-top: 1em;
+}
+
+nav a :last-child {
+  margin-bottom: 1em;
+}
+
+/*
+  Make adjustments based on portal count
+  Currently supporting 1 to 6 portals
+*/
+nav:has(a:last-child:is(:nth-child(2), :nth-child(3))) {
+  /* Portal count: 2 or 3 */
+  --pair-count: 1;
+  --base-offset: 40deg;
+}
+
+nav:has(a:last-child:is(:nth-child(4), :nth-child(5))) {
+  /* Portal count: 4 or 5 */
+  --pair-count: 2;
+  --base-offset: 50deg;
+}
+
+nav:has(a:last-child:is(:nth-child(6), :nth-child(7))) {
+  /* Portal count: 6 or 7 */
+  --pair-count: 3;
+  --base-offset: 45deg;
+}
+
+nav a:is(:nth-child(1), :nth-child(2)) {
+  --offset-group: var(--pair-count);
+}
+
+nav a:is(:nth-child(3), :nth-child(4)) {
+  --offset-group: calc(var(--pair-count) - 1);
+}
+
+nav a:is(:nth-child(5), :nth-child(6)) {
+  --offset-group: calc(var(--pair-count) - 2);
+}
+
+nav:has(:last-child:nth-child(even)) {
+  --extra-offset: 0deg;
+}
+
+nav:has(:last-child:nth-child(odd)) {
+  --extra-offset: calc(20deg / var(--pair-count));
+}
+
+/*
+  Add uniqueness to each portal
+*/
+nav a:nth-child(1) {
+  --nth: 1;
+  --spin-speed: 800ms;
+  --spin-delay: 200ms;
+  --nudge-x-speed: 1700ms;
+  --nudge-y-speed: 1300ms;
+}
+
+nav a:nth-child(2) {
+  --nth: 2;
+  --spin-speed: 950ms;
+  --spin-delay: 0ms;
+  --nudge-x-speed: 1200ms;
+  --nudge-y-speed: 1400ms;
+}
+
+nav a:nth-child(3) {
+  --nth: 3;
+  --spin-speed: 750ms;
+  --spin-delay: 300ms;
+  --nudge-x-speed: 1300ms;
+  --nudge-y-speed: 1500ms;
+}
+
+nav a:nth-child(4) {
+  --nth: 4;
+  --spin-speed: 850ms;
+  --spin-delay: 600ms;
+  --nudge-x-speed: 1800ms;
+  --nudge-y-speed: 1600ms;
+}
+
+nav a:nth-child(5) {
+  --nth: 5;
+  --spin-speed: 1000ms;
+  --spin-delay: 200ms;
+  --nudge-x-speed: 1400ms;
+  --nudge-y-speed: 1500ms;
+}
+
+nav a:nth-child(6) {
+  --nth: 6;
+  --spin-speed: 900ms;
+  --spin-delay: 200ms;
+  --nudge-x-speed: 1400ms;
+  --nudge-y-speed: 1800ms;
+}
+
+/*
+  Portal orientation on the circle based
+  on it being an even or odd child
+*/
+nav a:nth-child(odd) {
+  --direction: -1;
+  --base-rotation: -10deg;
+  --nudge-x-amount: 1em;
+}
+
+nav a:nth-child(even) {
+  --direction: 1;
+  --base-rotation: 10deg;
+  --nudge-x-amount: -1em;
+}
+
+/*
+  Special position for the last portal
+  only if there are an odd number of portals
+*/
+nav a:last-child:nth-child(odd) {
+  --offset-angle: 0deg;
+  --base-rotation: 0deg;
+}
+
+/*
+  Adjust portals based on if they are a
+  valid link (have an href)
+*/
+nav a:not(:any-link) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+nav a:any-link :first-child {
+  color: var(--color-secondary-text);
+}
+
+/*
+  Change portal scale and pause repeating
+  animations when being interacted with
+*/
+nav a:any-link:is(:focus-visible, :hover) {
+  border-color: var(--color-secondary-text);
+  --paused: paused;
+}
+
+nav a:any-link:not(:active):is(:focus-visible, :hover) {
+  scale: 110%;
+}
+
+nav a:any-link:is(:active) {
+  scale: 90%;
+  --paused: paused;
+}
+
+/*
+  Add a pulsing glow behind portals
+*/
+nav a:any-link::before {
+  content: "";
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: inherit;
+  height: inherit;
+  box-shadow: 0px 0px 1em 0.5em var(--color-secondary-text, hsl(286, 76%, 48%));
+  border-radius: inherit;
+  animation: pulse 400ms linear 0s infinite alternate;
+  animation-play-state: var(--paused, paused);
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 0.6;
+  }
+}
+
+/*
+  Portrait device styles
+*/
+@media screen and (orientation: portrait) and (width < 30rem) {
+  nav a {
+    top: 100%;
+  }
+
+  nav:has(a:last-child:is(:nth-child(4), :nth-child(5))) a:nth-child(-n + 2) {
+    top: unset;
+    bottom: 100%;
+    --base-angle: 90deg;
+  }
+
+  nav:has(a:last-child:is(:nth-child(6), :nth-child(7))) a:nth-child(-n + 3) {
+    top: unset;
+    bottom: 100%;
+    --base-angle: 90deg;
+  }
+}
+
+/*
+  Landscape device styles
+*/
+@media screen and (orientation: landscape) and (height < 30rem) {
+  nav a:nth-child(odd) {
+    left: 0%;
+  }
+
+  nav a:nth-child(even) {
+    left: 100%;
+  }
+}
+
+/*
+  Debug: Check circle size
+*/
+nav {
+  border: dashed 2px orange;
+  border-radius: 50%;
+
+  border: none;
+  border-radius: unset;
+}
